@@ -114,6 +114,11 @@
     content:"";position:absolute;inset:2px;border:3px solid var(--accent);border-radius:50%;
     opacity:0.85;transform:rotate(var(--stamp-rot,-8deg));pointer-events:none;
   }
+
+  .cell-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:6px;display:none;}
+  .cell.marked.has-photo .cell-photo{display:block;}
+  .cell.marked.has-photo span{display:none;}
+  .cell.marked.has-photo::after{inset:0;border-radius:7px;opacity:0.9;}
   .cell.free{background:var(--accent);cursor:default;flex-direction:column;gap:2px;}
   .cell.free span{color:var(--paper);}
   .cell.free .emoji{font-size:1.2rem;}
@@ -131,6 +136,8 @@
   .rules{margin-top:2.4rem;border-top:1px solid var(--line);padding-top:1.6rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem;}
   .rules h2{font-family:ui-monospace,"SF Mono",monospace;font-size:0.7rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 0.5rem;}
   .rules p{margin:0;font-size:0.88rem;line-height:1.55;color:var(--ink);max-width:32em;}
+  .rules a{color:var(--ink);}
+  .rules a:hover{color:var(--aegean);}
 
   .opa{
     position:fixed;left:50%;bottom:2rem;transform:translateX(-50%) translateY(20px);
@@ -141,6 +148,27 @@
   .opa.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
   @media (prefers-reduced-motion: reduce){.cell,.opa,.who-btn{transition:none;}}
+
+  @media (max-width:560px){
+    .wrap{padding:1.5rem 0.6rem 3rem;}
+    .kicker{font-size:0.6rem;gap:0.4rem;}
+    h1{font-size:clamp(1.7rem,8vw,2.4rem);}
+    .sub{font-size:0.88rem;}
+    .who-grid{grid-template-columns:1fr;max-width:340px;}
+    .who-btn{padding:1.1rem 1rem;font-size:1.25rem;}
+    .leaderboard{gap:0.4rem;margin:1.2rem 0 1.4rem;}
+    .chip{padding:0.35rem 0.65rem;font-size:0.74rem;}
+    .card-head{padding:0.85rem 0.8rem 0.65rem;}
+    .card-name{font-size:1.2rem;}
+    .perforation{margin:0 0.8rem;}
+    .grid{padding:0.6rem;gap:4px;}
+    .cell{aspect-ratio:auto;min-height:70px;padding:4px;}
+    .cell span{font-size:0.6rem;line-height:1.14;}
+    .cell.free .emoji{font-size:1.05rem;}
+    .cell.free .label{font-size:0.42rem;}
+    .card-foot{padding:0.55rem 0.8rem 0.9rem;}
+    .rules{grid-template-columns:1fr;gap:1.2rem;margin-top:2rem;}
+  }
 </style>
 </head>
 <body>
@@ -182,8 +210,8 @@
 
     <section class="rules">
       <div><h2>Sådan spiller I</h2><p>Hver af jer har sin egen billet på sin egen telefon. Spot feltet eller gør det, og tryk for at stemple. Fem i træk — lodret, vandret eller diagonalt — udløser "OPA!". Klik en anden billet i listen for at se hendes fremskridt.</p></div>
-      <div><h2>Midterfeltet</h2><p>Gratis stempel til jer alle tre: en selfie i de fjollede solbriller, samme tradition som sidste år.</p></div>
-      <div><h2>Præmien</h2><p>Den der først får fem i træk overtager fordelingen af solbrillerne resten af ferien — og bestemmer, hvor I spiser is den aften.</p></div>
+      <div><h2>Midterfeltet</h2><p>Gratis felt til jer alle tre — allerede stemplet, ingen opgave.</p></div>
+      <div><h2>Præmien</h2><p>Den der først får fem i træk, vinder aftenens præmie — <a href="medal.html">print medaljen her</a>.</p></div>
     </section>
   </section>
 
@@ -346,6 +374,27 @@ function renderOwnCard(id){
   wrap.appendChild(buildCard(id,p,state[id].marks,false));
 }
 
+// ── Foto pr. felt ─────────────────────────────────────────
+// Læg billeder i /images/ som item-01.jpg t/m item-24.jpg (rækkefølgen i
+// ITEMS herover) og evt. free.jpg til midterfeltet. .jpg, .jpeg og .png
+// prøves i den rækkefølge. Mangler et billede, vises stemplet som normalt.
+const PHOTO_EXTS=['jpg','jpeg','png'];
+function addPhoto(cell,basePath){
+  const img=document.createElement('img');
+  img.className='cell-photo';
+  img.alt='';
+  img.loading='lazy';
+  let i=0;
+  function tryNext(){
+    if(i>=PHOTO_EXTS.length){ img.remove(); return; }
+    img.src=basePath+'.'+PHOTO_EXTS[i++];
+  }
+  img.addEventListener('error', tryNext);
+  img.addEventListener('load', ()=>{ cell.classList.add('has-photo'); });
+  cell.appendChild(img);
+  tryNext();
+}
+
 function buildCard(id,p,marks,readonly){
   const el=document.createElement('article');
   el.className='card';
@@ -364,9 +413,11 @@ function buildCard(id,p,marks,readonly){
 
     if(itemIndex===null){
       cell.classList.add('free','marked');
-      cell.innerHTML='<span class="emoji">😎</span><span class="label">Gratis</span>';
+      cell.innerHTML='<span class="emoji">🏛️</span><span class="label">Gratis</span>';
+      addPhoto(cell,'images/free');
     }else{
       cell.innerHTML='<span>'+ITEMS[itemIndex]+'</span>';
+      addPhoto(cell,'images/item-'+String(itemIndex+1).padStart(2,'0'));
       if(marks[pos]) cell.classList.add('marked');
       if(!readonly){
         cell.tabIndex=0;
