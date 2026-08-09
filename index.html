@@ -138,8 +138,6 @@
   .rules p{margin:0;font-size:0.88rem;line-height:1.55;color:var(--ink);max-width:32em;}
   .rules a{color:var(--ink);}
   .rules a:hover{color:var(--aegean);}
-  .prize-link{background:none;border:none;font:inherit;color:var(--ink);text-decoration:underline;cursor:pointer;padding:0;}
-  .prize-link:hover{color:var(--aegean);}
 
   /* ---- prize modal ---- */
   .prize-overlay{
@@ -228,7 +226,6 @@
     <span id="sync-badge" class="sync-badge local">⚡ Sync</span>
   </div>
   <h1>Athen Bingo</h1>
-  <p class="sub">Tre billetter, én by. Hold øje med jeres eget skema, mens I går rundt i Athen — se det, gør det, sæt kryds.</p>
 
   <!-- SCREEN 1: choose player -->
   <section id="screen-select">
@@ -258,9 +255,8 @@
     <div id="peek-cards"></div>
 
     <section class="rules">
-      <div><h2>Sådan spiller I</h2><p>Hver af jer har sin egen billet på sin egen telefon. Spot feltet eller gør det, og tryk for at stemple. Når alle 24 felter er krydset af, popper præmien automatisk op med "OPA!". Klik en anden billet i listen for at se hendes fremskridt.</p></div>
+      <div><h2>Sådan spiller I</h2><p>Hver af os har sin egen bingoplade på sin egen telefon. De fleste felter skal I bare få øje på — et par stykker er skrevet som en kommando, og dem skal I selv gøre. Tryk på feltet for at stemple det. Når alle 24 felter er krydset af, har du vundet!</p></div>
       <div><h2>Midterfeltet</h2><p>Gratis felt til jer alle tre — allerede stemplet, ingen opgave.</p></div>
-      <div><h2>Præmien</h2><p>Den der først er igennem alle 24 felter, vinder aftenens præmie — <button class="prize-link" type="button" onclick="openPrize()">se den her</button>.</p></div>
     </section>
   </section>
 
@@ -325,7 +321,7 @@ function initFirebase(){
 
 // ── Bingo data ────────────────────────────────────────────
 const ITEMS=[
-  "En herreløs kat, der solbader",
+  "En herreløs kat — bonuspoint hvis den kommer, når du pspsps'er til den",
   "Et træ fyldt med appelsiner",
   "Nogen der sælger komboloi (bedekæder)",
   "Ruiner, der gemmer sig mellem moderne bygninger",
@@ -342,13 +338,13 @@ const ITEMS=[
   "Graffiti lige ved siden af en antik ruin",
   "Solnedgang set fra en tagterrasse",
   "En hund i sweater eller med tørklæde",
-  "Et skilt med en sjov engelsk oversættelse",
-  "Nogen der ryger og drikker frappé på samme tid",
-  "En metrostation med oldsager i glasmontre",
-  "Søjler, I tre kan nå at kramme sammen om",
-  "En café, hvor I bestiller på (forsøgt) græsk",
-  "Nogen der prutter om prisen i en butik",
-  "En gyde eller trappe, ingen af jer havde opdaget"
+  "Et skilt med en dårlig engelsk oversættelse",
+  "Nogen der ryger og drikker freddo espresso på samme tid",
+  "En metrostation med gammelt bras i glasmontre",
+  "En søjle så tyk, at I tre ikke kan nå at kramme om den sammen",
+  "Bestil på (forsøgt) græsk i en café",
+  "Prut om prisen i en butik",
+  "Lav en TikTok video i poolen (Lisa skal ikke have hovedet under vand)"
 ];
 const PLAYERS={
   lisa:   {name:"Lisa",   code:"NR. 001 / ATH", accent:"var(--aegean)", cssVar:"--aegean",
@@ -390,6 +386,11 @@ function enterGame(id){
   document.getElementById('screen-select').style.display='none';
   document.getElementById('screen-game').style.display='block';
 
+  // Nulstil "kig på andres billet"-visning, så den ikke hænger ved, når man skifter spiller.
+  Object.keys(openPeeks).forEach(k=>delete openPeeks[k]);
+  document.getElementById('peek-cards').innerHTML='';
+
+  const hydrated={};
   ORDER_IDS.forEach(pid=>{
     const local=loadLocal(pid);
     if(local) state[pid].marks=local;
@@ -404,8 +405,12 @@ function enterGame(id){
         }
         state[pid].won=hasWin(state[pid].marks);
         renderLeaderboard(id);
-        if(pid===id) renderOwnCard(id);
-        if(openPeeks[pid]) renderPeek(pid);
+        // Egen billet genopbygges kun ved første hentning (skift af enhed/genindlæsning).
+        // Ellers ville ethvert Firebase-ekko af vores egne skriv genopbygge kortet midt i
+        // et klik og kunne tabe hurtige klik, mens man krydser felter af.
+        if(pid===id && !hydrated[pid]) renderOwnCard(id);
+        if(pid!==id && openPeeks[pid]) renderPeek();
+        hydrated[pid]=true;
       });
     }
   });
@@ -466,13 +471,14 @@ const IMAGE_FILES=[
   "IMG_8623.jpg","IMG_8627.jpg","IMG_8729.jpg","IMG_8978.JPG","IMG_8980.JPG",
   "IMG_8989.JPG","IMG_8992.JPG"
 ];
+// De tre midterfelt-billeder er reserveret og må ikke også optræde tilfældigt.
+const RANDOM_POOL=IMAGE_FILES.filter(f=>!Object.values(FREE_IMAGES).includes(f));
 function hashStr(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))|0; } return Math.abs(h); }
-function pickImage(seed){ return IMAGE_FILES[hashStr(seed)%IMAGE_FILES.length]; }
+function pickImage(seed){ return RANDOM_POOL[hashStr(seed)%RANDOM_POOL.length]; }
 function addPhotoSlot(cell,seed){
   const img=document.createElement('img');
   img.className='cell-photo';
   img.alt='';
-  img.loading='lazy';
   img.addEventListener('load', ()=>{ cell.classList.add('has-photo'); });
   img.addEventListener('error', ()=>{ img.remove(); });
   cell.appendChild(img);
@@ -482,7 +488,6 @@ function addFixedPhoto(cell,filename){
   const img=document.createElement('img');
   img.className='cell-photo';
   img.alt='';
-  img.loading='lazy';
   img.addEventListener('load', ()=>{ cell.classList.add('has-photo'); });
   img.addEventListener('error', ()=>{ img.remove(); });
   img.src='imgs/'+filename;
