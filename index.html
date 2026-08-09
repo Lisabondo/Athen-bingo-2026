@@ -398,6 +398,11 @@ function enterGame(id){
 
     if(fbDB){
       fbDB.ref('athenBingo/players/'+pid+'/marks').on('value', snap=>{
+        // Egen billet: kun selve den første hentning (skift af enhed/genindlæsning) må
+        // røre vores state. Derefter er lokale klik ENESTE kilde til sandhed for won/marks —
+        // ellers kan et forsinket Firebase-ekko (fx fra en tidligere test) smutte ind og
+        // stille og roligt nulstille "won"-flaget, så den automatiske fejring aldrig udløses.
+        if(pid===id && hydrated[pid]) return;
         const d=snap.val();
         if(d){
           state[pid].marks=d;
@@ -405,10 +410,7 @@ function enterGame(id){
         }
         state[pid].won=hasWin(state[pid].marks);
         renderLeaderboard(id);
-        // Egen billet genopbygges kun ved første hentning (skift af enhed/genindlæsning).
-        // Ellers ville ethvert Firebase-ekko af vores egne skriv genopbygge kortet midt i
-        // et klik og kunne tabe hurtige klik, mens man krydser felter af.
-        if(pid===id && !hydrated[pid]) renderOwnCard(id);
+        if(pid===id) renderOwnCard(id);
         if(pid!==id && openPeeks[pid]) renderPeek();
         hydrated[pid]=true;
       });
