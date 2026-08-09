@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Athen Bingo</title>
+<style>
+  :root{
+    --pentelic:#EFE8D8;
+    --paper:#FAF6EC;
+    --ink:#2A2419;
+    --ink-soft:#5A5140;
+    --line:#D9CEB4;
+    --aegean:#1E5B82;
+    --ochre:#B96B24;
+    --olive:#5F7A45;
+    --shadow: 0 1px 2px rgba(42,36,25,0.08), 0 6px 18px rgba(42,36,25,0.08);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --pentelic:#1B1812; --paper:#242019; --ink:#EDE6D6; --ink-soft:#B8AD97; --line:#3B3527;
+      --aegean:#5AA6D1; --ochre:#E0954C; --olive:#8FAE6C;
+      --shadow: 0 1px 2px rgba(0,0,0,0.35), 0 8px 24px rgba(0,0,0,0.35);
+    }
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--pentelic); color:var(--ink);
+    font-family:"Avenir Next","Century Gothic","Futura","Trebuchet MS",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:900px;margin:0 auto;padding:2rem 1.1rem 4rem;}
+  .kicker{
+    font-family:ui-monospace,"SF Mono","Courier New",monospace;
+    font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-soft);
+    margin:0 0 0.5rem;display:flex;align-items:center;justify-content:center;gap:0.6rem;
+  }
+  h1{
+    font-family:"Big Caslon Medium","Didot","Iowan Old Style",Georgia,"Times New Roman",serif;
+    font-size:clamp(2.1rem,6vw,3.4rem); font-weight:500; letter-spacing:0.03em;
+    text-transform:uppercase; margin:0 0 0.4rem; text-align:center; text-wrap:balance;
+  }
+  .sub{font-size:0.98rem;color:var(--ink-soft);max-width:34em;margin:0 auto;line-height:1.55;text-align:center;}
+
+  /* ---- sync badge ---- */
+  .sync-badge{font-size:0.68rem;letter-spacing:0.05em;padding:0.15rem 0.5rem;border-radius:999px;border:1px solid var(--line);}
+  .sync-badge.ok{color:var(--olive);border-color:var(--olive);}
+  .sync-badge.err{color:#b3462c;border-color:#b3462c;}
+  .sync-badge.local{color:var(--ochre);border-color:var(--ochre);}
+
+  /* ---- player select screen ---- */
+  #screen-select{display:flex;flex-direction:column;align-items:center;gap:2.2rem;padding-top:2rem;}
+  .who-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;width:100%;max-width:640px;}
+  .who-btn{
+    background:var(--paper);border:1px solid var(--line);border-radius:14px;
+    padding:1.6rem 1rem;cursor:pointer;box-shadow:var(--shadow);
+    font-family:"Big Caslon Medium","Didot",Georgia,serif;font-size:1.4rem;color:var(--who-accent);
+    display:flex;flex-direction:column;align-items:center;gap:0.5rem;
+    transition:transform 0.12s ease;
+  }
+  .who-btn:hover{transform:translateY(-2px);}
+  .who-btn:active{transform:translateY(0) scale(0.98);}
+  .who-btn .dot{width:14px;height:14px;border-radius:50%;background:var(--who-accent);}
+  .who-btn small{font-family:ui-monospace,"SF Mono",monospace;font-size:0.65rem;color:var(--ink-soft);letter-spacing:0.05em;}
+
+  /* ---- game screen ---- */
+  #screen-game{display:none;}
+  .masthead{text-align:center;margin-bottom:1.4rem;position:relative;}
+  .switch-link{
+    background:none;border:none;font-family:inherit;font-size:0.75rem;color:var(--ink-soft);
+    text-decoration:underline;cursor:pointer;padding:0;margin-top:0.3rem;
+  }
+  .switch-link:hover{color:var(--ink);}
+
+  .leaderboard{
+    display:flex;gap:0.6rem;flex-wrap:wrap;justify-content:center;margin:1.6rem 0 1.8rem;
+  }
+  .chip{
+    display:flex;align-items:center;gap:0.5rem;background:var(--paper);border:1px solid var(--line);
+    border-radius:999px;padding:0.45rem 0.9rem;cursor:pointer;font-size:0.82rem;
+  }
+  .chip.self{cursor:default;border-color:var(--chip-accent,var(--line));}
+  .chip .dot{width:9px;height:9px;border-radius:50%;background:var(--chip-accent);}
+  .chip .count{font-family:ui-monospace,"SF Mono",monospace;color:var(--ink-soft);}
+  .chip .opa{font-size:0.85rem;}
+  .chip:hover{border-color:var(--chip-accent);}
+
+  .card{
+    background:var(--paper); border:1px solid var(--line); border-radius:14px;
+    box-shadow:var(--shadow); overflow:hidden; --accent:var(--aegean); margin-bottom:1.2rem;
+  }
+  .card-head{padding:1.05rem 1.2rem 0.85rem;display:flex;align-items:baseline;justify-content:space-between;gap:0.5rem;}
+  .card-name{font-family:"Big Caslon Medium","Didot",Georgia,serif;font-size:1.4rem;margin:0;color:var(--accent);}
+  .card-code{font-family:ui-monospace,"SF Mono",monospace;font-size:0.68rem;letter-spacing:0.08em;color:var(--ink-soft);white-space:nowrap;}
+  .perforation{position:relative;height:0;border-top:1px dashed var(--line);margin:0 1.2rem;}
+  .perforation::before,.perforation::after{content:"";position:absolute;top:-7px;width:14px;height:14px;border-radius:50%;background:var(--pentelic);border:1px solid var(--line);}
+  .perforation::before{left:-1.4rem;} .perforation::after{right:-1.4rem;}
+
+  .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:1.15rem;}
+  .cell{
+    position:relative;aspect-ratio:1;border:1px solid var(--line);border-radius:7px;background:var(--pentelic);
+    display:flex;align-items:center;justify-content:center;padding:5px;cursor:pointer;
+    -webkit-tap-highlight-color:transparent;transition:background 0.15s ease, transform 0.1s ease;
+  }
+  .cell.readonly{cursor:default;}
+  .cell:hover{background:color-mix(in srgb, var(--accent) 10%, var(--pentelic));}
+  .cell:active{transform:scale(0.96);}
+  .cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .cell span{font-size:clamp(0.5rem,2.6vw,0.66rem);line-height:1.18;text-align:center;hyphens:auto;color:var(--ink);}
+  .cell.marked{background:color-mix(in srgb, var(--accent) 16%, var(--paper));}
+  .cell.marked span{color:var(--ink-soft);}
+  .cell.marked::after{
+    content:"";position:absolute;inset:2px;border:3px solid var(--accent);border-radius:50%;
+    opacity:0.85;transform:rotate(var(--stamp-rot,-8deg));pointer-events:none;
+  }
+  .cell.free{background:var(--accent);cursor:default;flex-direction:column;gap:2px;}
+  .cell.free span{color:var(--paper);}
+  .cell.free .emoji{font-size:1.2rem;}
+  .cell.free .label{font-family:ui-monospace,"SF Mono",monospace;font-size:0.48rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--paper);opacity:0.85;}
+
+  .card-foot{display:flex;justify-content:space-between;align-items:center;padding:0.65rem 1.2rem 1.05rem;}
+  .reset{background:none;border:1px solid var(--line);color:var(--ink-soft);font-family:inherit;font-size:0.72rem;padding:0.35rem 0.7rem;border-radius:999px;cursor:pointer;}
+  .reset:hover{border-color:var(--accent);color:var(--accent);}
+  .status{font-family:ui-monospace,"SF Mono",monospace;font-size:0.68rem;color:var(--ink-soft);}
+  .status.win{color:var(--accent);font-weight:600;}
+
+  .peek-wrap{display:none;}
+  .peek-wrap.open{display:block;}
+
+  .rules{margin-top:2.4rem;border-top:1px solid var(--line);padding-top:1.6rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem;}
+  .rules h2{font-family:ui-monospace,"SF Mono",monospace;font-size:0.7rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 0.5rem;}
+  .rules p{margin:0;font-size:0.88rem;line-height:1.55;color:var(--ink);max-width:32em;}
+
+  .opa{
+    position:fixed;left:50%;bottom:2rem;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:var(--pentelic);font-family:"Big Caslon Medium","Didot",Georgia,serif;
+    font-size:1.05rem;letter-spacing:0.05em;padding:0.65rem 1.3rem;border-radius:999px;box-shadow:var(--shadow);
+    opacity:0;pointer-events:none;transition:opacity 0.3s ease, transform 0.3s ease;z-index:10;
+  }
+  .opa.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  @media (prefers-reduced-motion: reduce){.cell,.opa,.who-btn{transition:none;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kicker">
+    <span>ATH · Ferie-billet</span>
+    <span id="sync-badge" class="sync-badge local">⚡ Sync</span>
+  </div>
+  <h1>Athen Bingo</h1>
+  <p class="sub">Tre billetter, én by. Hold øje med jeres eget skema, mens I går rundt i Athen — se det, gør det, sæt kryds.</p>
+
+  <!-- SCREEN 1: choose player -->
+  <section id="screen-select">
+    <p style="font-family:ui-monospace,'SF Mono',monospace;font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-soft);margin:0.5rem 0 0;">Hvem er du?</p>
+    <div class="who-grid">
+      <button class="who-btn" style="--who-accent:var(--aegean)" onclick="choosePlayer('lisa')">
+        <span class="dot"></span>Lisa<small>NR. 001 / ATH</small>
+      </button>
+      <button class="who-btn" style="--who-accent:var(--ochre)" onclick="choosePlayer('emilie')">
+        <span class="dot"></span>Emilie<small>NR. 002 / ATH</small>
+      </button>
+      <button class="who-btn" style="--who-accent:var(--olive)" onclick="choosePlayer('fie')">
+        <span class="dot"></span>Fie<small>NR. 003 / ATH</small>
+      </button>
+    </div>
+  </section>
+
+  <!-- SCREEN 2: your card + leaderboard -->
+  <section id="screen-game">
+    <div class="masthead">
+      <button class="switch-link" onclick="showSelect()">Skift spiller</button>
+    </div>
+
+    <div class="leaderboard" id="leaderboard"></div>
+
+    <div id="own-card"></div>
+    <div id="peek-cards"></div>
+
+    <section class="rules">
+      <div><h2>Sådan spiller I</h2><p>Hver af jer har sin egen billet på sin egen telefon. Spot feltet eller gør det, og tryk for at stemple. Fem i træk — lodret, vandret eller diagonalt — udløser "OPA!". Klik en anden billet i listen for at se hendes fremskridt.</p></div>
+      <div><h2>Midterfeltet</h2><p>Gratis stempel til jer alle tre: en selfie i de fjollede solbriller, samme tradition som sidste år.</p></div>
+      <div><h2>Præmien</h2><p>Den der først får fem i træk overtager fordelingen af solbrillerne resten af ferien — og bestemmer, hvor I spiser is den aften.</p></div>
+    </section>
+  </section>
+
+</div>
+
+<div class="opa" id="opa">OPA!</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+// ── Firebase ──────────────────────────────────────────────
+// Se firebase-setup.md for hvordan du udfylder disse 7 linjer.
+const FIREBASE_CONFIG={
+  apiKey:"PASTE_YOUR_API_KEY",
+  authDomain:"PASTE_YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL:"https://PASTE_YOUR_PROJECT_ID-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"PASTE_YOUR_PROJECT_ID",
+  storageBucket:"PASTE_YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId:"PASTE_YOUR_SENDER_ID",
+  appId:"PASTE_YOUR_APP_ID"
+};
+let fbDB=null;
+function setSyncBadge(s){
+  const b=document.getElementById('sync-badge');if(!b)return;
+  b.className='sync-badge '+(s||'');
+  b.textContent={ok:'🟢 Synk',err:'🔴 Offline',local:'🟡 Lokal'}[s]||'⚡ Sync';
+}
+function initFirebase(){
+  if(FIREBASE_CONFIG.apiKey.indexOf('PASTE_')===0){setSyncBadge('local');return;}
+  try{ firebase.initializeApp(FIREBASE_CONFIG); fbDB=firebase.database(); setSyncBadge('ok'); }
+  catch(e){ console.warn(e); setSyncBadge('err'); }
+}
+
+// ── Bingo data ────────────────────────────────────────────
+const ITEMS=[
+  "En herreløs kat, der solbader",
+  "Et træ fyldt med appelsiner",
+  "Nogen der sælger komboloi (bedekæder)",
+  "Ruiner, der gemmer sig mellem moderne bygninger",
+  "En taverna med borde ude på fortovet",
+  "En kirke med blå kuppel",
+  "Nogen der spiller tavli (backgammon)",
+  "En scooter med mindst 2 personer på",
+  "Marmortrapper fyldt med folk, der hænger ud",
+  "En gademusiker",
+  "Friskpresset appelsinjuice til salg på gaden",
+  "Et 'evil eye' (mavromatiko) smykke i en butik",
+  "En balkon druknet i planter",
+  "Souvlaki- eller gyros-bod med kø",
+  "Graffiti lige ved siden af en antik ruin",
+  "Solnedgang set fra en tagterrasse",
+  "En hund i sweater eller med tørklæde",
+  "Et skilt med en sjov engelsk oversættelse",
+  "Nogen der ryger og drikker frappé på samme tid",
+  "En metrostation med oldsager i glasmontre",
+  "Søjler, I tre kan nå at kramme sammen om",
+  "En café, hvor I bestiller på (forsøgt) græsk",
+  "Nogen der prutter om prisen i en butik",
+  "En gyde eller trappe, ingen af jer havde opdaget"
+];
+const PLAYERS={
+  lisa:   {name:"Lisa",   code:"NR. 001 / ATH", accent:"var(--aegean)", cssVar:"--aegean",
+           order:[0,1,2,3,4,5,6,7,8,9,10,11,null,12,13,14,15,16,17,18,19,20,21,22,23]},
+  emilie: {name:"Emilie", code:"NR. 002 / ATH", accent:"var(--ochre)",  cssVar:"--ochre",
+           order:[8,9,10,11,12,13,14,15,16,17,18,19,null,20,21,22,23,0,1,2,3,4,5,6,7]},
+  fie:    {name:"Fie",    code:"NR. 003 / ATH", accent:"var(--olive)",  cssVar:"--olive",
+           order:[16,17,18,19,20,21,22,23,0,1,2,3,null,4,5,6,7,8,9,10,11,12,13,14,15]}
+};
+const ORDER_IDS=["lisa","emilie","fie"];
+const LINES=[
+  [0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24],
+  [0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24],
+  [0,6,12,18,24],[4,8,12,16,20]
+];
+function blankMarks(id){ return PLAYERS[id].order.map(v=>v===null); }
+function hasWin(marks){ return LINES.some(line=>line.every(i=>marks[i])); }
+
+// state[id] = {marks:[...], won:bool}
+const state={};
+ORDER_IDS.forEach(id=>{ state[id]={marks:blankMarks(id), won:false}; });
+const openPeeks={};
+
+function loadLocal(id){
+  try{ const r=localStorage.getItem('athenBingoMarks_'+id); if(r) return JSON.parse(r); }catch(e){}
+  return null;
+}
+function saveLocal(id,marks){
+  try{ localStorage.setItem('athenBingoMarks_'+id, JSON.stringify(marks)); }catch(e){}
+}
+
+function getMe(){ return localStorage.getItem('athenBingoPlayer')||''; }
+function choosePlayer(id){
+  localStorage.setItem('athenBingoPlayer', id);
+  enterGame(id);
+}
+function showSelect(){
+  document.getElementById('screen-select').style.display='flex';
+  document.getElementById('screen-game').style.display='none';
+}
+
+function enterGame(id){
+  document.getElementById('screen-select').style.display='none';
+  document.getElementById('screen-game').style.display='block';
+
+  ORDER_IDS.forEach(pid=>{
+    const local=loadLocal(pid);
+    if(local) state[pid].marks=local;
+    state[pid].won=hasWin(state[pid].marks);
+
+    if(fbDB){
+      fbDB.ref('athenBingo/players/'+pid+'/marks').on('value', snap=>{
+        const d=snap.val();
+        if(d){
+          state[pid].marks=d;
+          saveLocal(pid,d);
+        }
+        state[pid].won=hasWin(state[pid].marks);
+        renderLeaderboard(id);
+        if(pid===id) renderOwnCard(id);
+        if(openPeeks[pid]) renderPeek(pid);
+      });
+    }
+  });
+
+  renderLeaderboard(id);
+  renderOwnCard(id);
+  renderPeek(); // re-render any already-open peeks (none on first entry)
+}
+
+function writeMarks(id,marks){
+  saveLocal(id,marks);
+  if(fbDB) fbDB.ref('athenBingo/players/'+id+'/marks').set(marks).catch(console.warn);
+}
+
+// ── Leaderboard ───────────────────────────────────────────
+function renderLeaderboard(me){
+  const el=document.getElementById('leaderboard');
+  el.innerHTML='';
+  ORDER_IDS.forEach(pid=>{
+    const p=PLAYERS[pid];
+    const count=state[pid].marks.filter(Boolean).length-1;
+    const chip=document.createElement('div');
+    chip.className='chip'+(pid===me?' self':'');
+    chip.style.setProperty('--chip-accent', p.accent);
+    chip.innerHTML='<span class="dot"></span>'+p.name+
+      '<span class="count">'+count+'/24</span>'+
+      (state[pid].won?'<span class="opa">🎉</span>':'');
+    if(pid!==me){
+      chip.addEventListener('click', ()=>togglePeek(pid));
+    }
+    el.appendChild(chip);
+  });
+}
+
+// ── Own card ──────────────────────────────────────────────
+function renderOwnCard(id){
+  const p=PLAYERS[id];
+  const wrap=document.getElementById('own-card');
+  wrap.innerHTML='';
+  wrap.appendChild(buildCard(id,p,state[id].marks,false));
+}
+
+function buildCard(id,p,marks,readonly){
+  const el=document.createElement('article');
+  el.className='card';
+  el.style.setProperty('--accent',p.accent);
+  el.innerHTML=
+    '<div class="card-head"><h2 class="card-name">'+p.name+'</h2><span class="card-code">'+p.code+'</span></div>'+
+    '<div class="perforation"></div>'+
+    '<div class="grid"></div>'+
+    (readonly?'':'<div class="card-foot"><button class="reset" type="button">Nulstil billet</button><span class="status"></span></div>');
+
+  const gridEl=el.querySelector('.grid');
+  p.order.forEach((itemIndex,pos)=>{
+    const cell=document.createElement('div');
+    cell.className='cell'+(readonly?' readonly':'');
+    cell.style.setProperty('--stamp-rot', ((pos*47)%17-8)+'deg');
+
+    if(itemIndex===null){
+      cell.classList.add('free','marked');
+      cell.innerHTML='<span class="emoji">😎</span><span class="label">Gratis</span>';
+    }else{
+      cell.innerHTML='<span>'+ITEMS[itemIndex]+'</span>';
+      if(marks[pos]) cell.classList.add('marked');
+      if(!readonly){
+        cell.tabIndex=0;
+        cell.setAttribute('role','checkbox');
+        cell.setAttribute('aria-checked', marks[pos]?'true':'false');
+        const toggle=()=>{
+          marks[pos]=!marks[pos];
+          cell.classList.toggle('marked', marks[pos]);
+          cell.setAttribute('aria-checked', marks[pos]?'true':'false');
+          writeMarks(id,marks);
+          updateOwnStatus(id,el);
+          renderLeaderboard(id);
+        };
+        cell.addEventListener('click', toggle);
+        cell.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); } });
+      }
+    }
+    gridEl.appendChild(cell);
+  });
+
+  if(!readonly){
+    const resetBtn=el.querySelector('.reset');
+    resetBtn.addEventListener('click', ()=>{
+      const fresh=blankMarks(id);
+      state[id].marks=fresh;
+      state[id].won=false;
+      writeMarks(id,fresh);
+      renderOwnCard(id);
+      renderLeaderboard(id);
+    });
+    updateOwnStatus(id,el);
+  }
+  return el;
+}
+
+function updateOwnStatus(id,cardEl){
+  const marks=state[id].marks;
+  const count=marks.filter(Boolean).length-1;
+  const statusEl=cardEl.querySelector('.status');
+  const win=hasWin(marks);
+  const wasWon=state[id].won;
+  state[id].won=win;
+  if(win){
+    statusEl.textContent='OPA! '+PLAYERS[id].name+' har fem i træk';
+    statusEl.classList.add('win');
+    if(!wasWon) showOpa();
+  }else{
+    statusEl.textContent=count+' / 24 stemplet';
+    statusEl.classList.remove('win');
+  }
+}
+
+// ── Peek (read-only view of the other two) ───────────────
+function togglePeek(pid){
+  openPeeks[pid]=!openPeeks[pid];
+  renderPeek();
+}
+function renderPeek(){
+  const wrap=document.getElementById('peek-cards');
+  wrap.innerHTML='';
+  ORDER_IDS.forEach(pid=>{
+    if(!openPeeks[pid]) return;
+    wrap.appendChild(buildCard(pid,PLAYERS[pid],state[pid].marks,true));
+  });
+}
+
+// ── OPA toast ─────────────────────────────────────────────
+let opaTimer=null;
+function showOpa(){
+  const opa=document.getElementById('opa');
+  clearTimeout(opaTimer);
+  opa.classList.add('show');
+  opaTimer=setTimeout(()=>opa.classList.remove('show'), 2200);
+}
+
+// ── Boot ──────────────────────────────────────────────────
+initFirebase();
+const saved=getMe();
+if(saved && PLAYERS[saved]) enterGame(saved); else showSelect();
+</script>
+</body>
+</html>
