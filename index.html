@@ -92,7 +92,6 @@
   }
   .card-head{padding:1.05rem 1.2rem 0.85rem;display:flex;align-items:baseline;justify-content:space-between;gap:0.5rem;}
   .card-name{font-family:"Big Caslon Medium","Didot",Georgia,serif;font-size:1.4rem;margin:0;color:var(--accent);}
-  .card-code{font-family:ui-monospace,"SF Mono",monospace;font-size:0.68rem;letter-spacing:0.08em;color:var(--ink-soft);white-space:nowrap;}
   .perforation{position:relative;height:0;border-top:1px dashed var(--line);margin:0 1.2rem;}
   .perforation::before,.perforation::after{content:"";position:absolute;top:-7px;width:14px;height:14px;border-radius:50%;background:var(--pentelic);border:1px solid var(--line);}
   .perforation::before{left:-1.4rem;} .perforation::after{right:-1.4rem;}
@@ -222,7 +221,7 @@
 <div class="wrap">
 
   <div class="kicker">
-    <span>ATH · Ferie-billet</span>
+    <span>ATH · Ferie-bingo</span>
     <span id="sync-badge" class="sync-badge local">⚡ Sync</span>
   </div>
   <h1>Athen Bingo</h1>
@@ -232,13 +231,13 @@
     <p style="font-family:ui-monospace,'SF Mono',monospace;font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-soft);margin:0.5rem 0 0;">Hvem er du?</p>
     <div class="who-grid">
       <button class="who-btn" style="--who-accent:var(--aegean)" onclick="choosePlayer('lisa')">
-        <span class="dot"></span>Lisa<small>NR. 001 / ATH</small>
+        <span class="dot"></span>Lisa
       </button>
       <button class="who-btn" style="--who-accent:var(--ochre)" onclick="choosePlayer('emilie')">
-        <span class="dot"></span>Emilie<small>NR. 002 / ATH</small>
+        <span class="dot"></span>Emilie
       </button>
       <button class="who-btn" style="--who-accent:var(--olive)" onclick="choosePlayer('fie')">
-        <span class="dot"></span>Fie<small>NR. 003 / ATH</small>
+        <span class="dot"></span>Fie
       </button>
     </div>
   </section>
@@ -255,7 +254,7 @@
     <div id="peek-cards"></div>
 
     <section class="rules">
-      <div><h2>Sådan spiller I</h2><p>Hver af os har sin egen bingoplade på sin egen telefon. De fleste felter skal I bare få øje på — et par stykker er skrevet som en kommando, og dem skal I selv gøre. Tryk på feltet for at stemple det. Når alle 24 felter er krydset af, har du vundet!</p></div>
+      <div><h2>Sådan spiller I</h2><p>Vi har vores egen bingoplade på hver vores telefon. De fleste felter er blot ting vi skal få øje på, men nogle enkelte skal vi udføre. Tryk på et felt for at krydse det af. Når alle 24 felter er krydset af, har du vundet!</p></div>
       <div><h2>Midterfeltet</h2><p>Gratis felt til jer alle tre — allerede stemplet, ingen opgave.</p></div>
     </section>
   </section>
@@ -347,11 +346,11 @@ const ITEMS=[
   "Lav en TikTok video i poolen (Lisa skal ikke have hovedet under vand)"
 ];
 const PLAYERS={
-  lisa:   {name:"Lisa",   code:"NR. 001 / ATH", accent:"var(--aegean)", cssVar:"--aegean",
+  lisa:   {name:"Lisa",   accent:"var(--aegean)", cssVar:"--aegean",
            order:[0,1,2,3,4,5,6,7,8,9,10,11,null,12,13,14,15,16,17,18,19,20,21,22,23]},
-  emilie: {name:"Emilie", code:"NR. 002 / ATH", accent:"var(--ochre)",  cssVar:"--ochre",
+  emilie: {name:"Emilie", accent:"var(--ochre)",  cssVar:"--ochre",
            order:[8,9,10,11,12,13,14,15,16,17,18,19,null,20,21,22,23,0,1,2,3,4,5,6,7]},
-  fie:    {name:"Fie",    code:"NR. 003 / ATH", accent:"var(--olive)",  cssVar:"--olive",
+  fie:    {name:"Fie",    accent:"var(--olive)",  cssVar:"--olive",
            order:[16,17,18,19,20,21,22,23,0,1,2,3,null,4,5,6,7,8,9,10,11,12,13,14,15]}
 };
 const ORDER_IDS=["lisa","emilie","fie"];
@@ -501,7 +500,7 @@ function buildCard(id,p,marks,readonly){
   el.className='card';
   el.style.setProperty('--accent',p.accent);
   el.innerHTML=
-    '<div class="card-head"><h2 class="card-name">'+p.name+'</h2><span class="card-code">'+p.code+'</span></div>'+
+    '<div class="card-head"><h2 class="card-name">'+p.name+'</h2></div>'+
     '<div class="perforation"></div>'+
     '<div class="grid"></div>'+
     (readonly?'':'<div class="card-foot"><button class="reset" type="button">Nulstil billet</button><span class="status"></span></div>');
